@@ -40,4 +40,12 @@ export class RecipeService {
   addIngredientsToShoppingList(ingredients: Ingredient[]): void {
     this.shoppingListService.addIngredients(ingredients);
   }
+
+  public addRecipe(recipe: Recipe): void {
+    this.recipes.push(recipe);
+  }
+
+  public updateRecipe(index: number, newRecipe: Recipe): void {
+    this.recipes[+index] = newRecipe;
+  }
 }
