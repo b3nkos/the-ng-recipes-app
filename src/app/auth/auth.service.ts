@@ -40,7 +40,10 @@ export class AuthService {
       email,
       password,
       returnSecureToken: true
-    }).pipe(catchError(this.handleError));
+    }).pipe(
+      catchError(this.handleError),
+      tap(this.handlerUserAuthentication)
+    );
   }
 
   private handlerUserAuthentication = (responseData: AuthResponseData) => {
