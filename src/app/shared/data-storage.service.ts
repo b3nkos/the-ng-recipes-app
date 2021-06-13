@@ -22,7 +22,8 @@ export class DataStorageService {
   }
 
   public fetchRecipes(): Observable<Recipe[]> {
-    return this.httpClient.get<Recipe[]>('https://ng-course-recipe-book-2124b-default-rtdb.firebaseio.com/recipes.json')
+    return this.httpClient
+      .get<Recipe[]>('https://ng-course-recipe-book-2124b-default-rtdb.firebaseio.com/recipes.json')
       .pipe(
         map(recipes => {
           return recipes.map(recipe => {
