@@ -21,46 +21,13 @@ export interface AuthResponseData {
 export class AuthService {
 
   public userSubject = new BehaviorSubject<UserModel>(null);
+  private tokenExpirationTimer: any;
 
-  constructor(private httpClient: HttpClient, private router: Router) {
+  private static getTimestamp(expiresIn: number): number {
+    return new Date().getTime() + expiresIn * 1000;
   }
 
-  public signUp(email: string, password: string): Observable<AuthResponseData> {
-    return this.httpClient.post<AuthResponseData>('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyD_fw8EUo0AS8PAXEQiRYTxUwpCNDeAMfc', {
-      email,
-      password,
-      returnSecureToken: true
-    }).pipe(
-      catchError(this.handleError),
-      tap(this.handlerUserAuthentication)
-    );
-  }
-
-  public login(email: string, password: string): Observable<AuthResponseData> {
-    return this.httpClient.post<AuthResponseData>('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyD_fw8EUo0AS8PAXEQiRYTxUwpCNDeAMfc', {
-      email,
-      password,
-      returnSecureToken: true
-    }).pipe(
-      catchError(this.handleError),
-      tap(this.handlerUserAuthentication)
-    );
-  }
-
-  public logout(): void {
-    this.userSubject.next(null);
-    this.router.navigate(['/auth']);
-  }
-
-  private handlerUserAuthentication = (responseData: AuthResponseData) => {
-    const timestamp: number = new Date().getTime() + +responseData.expiresIn * 1000;
-    const expirationDate = new Date(timestamp);
-    const user = new UserModel(responseData.localId,
-      responseData.email, responseData.idToken, expirationDate);
-    this.userSubject.next(user);
-  }
-
-  private handleError(errorResponse: HttpErrorResponse): Observable<never> {
+  private static handleError(errorResponse: HttpErrorResponse): Observable<never> {
     let errorMessage = 'An unknown error occurs';
 
     if (!errorResponse.error || !errorResponse.error.error) {
@@ -83,5 +50,79 @@ export class AuthService {
     }
 
     return throwError(errorMessage);
+  }
+
+  constructor(private httpClient: HttpClient, private router: Router) {
+  }
+
+  public signUp(email: string, password: string): Observable<AuthResponseData> {
+    return this.httpClient.post<AuthResponseData>('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyD_fw8EUo0AS8PAXEQiRYTxUwpCNDeAMfc', {
+      email,
+      password,
+      returnSecureToken: true
+    }).pipe(
+      catchError(AuthService.handleError),
+      tap(this.handlerUserAuthentication)
+    );
+  }
+
+  public login(email: string, password: string): Observable<AuthResponseData> {
+    return this.httpClient.post<AuthResponseData>('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyD_fw8EUo0AS8PAXEQiRYTxUwpCNDeAMfc', {
+      email,
+      password,
+      returnSecureToken: true
+    }).pipe(
+      catchError(AuthService.handleError),
+      tap(this.handlerUserAuthentication)
+    );
+  }
+
+  public logout(): void {
+    this.userSubject.next(null);
+    this.router.navigate(['/auth']);
+    localStorage.removeItem('userData');
+
+    if (this.tokenExpirationTimer) {
+      clearTimeout(this.tokenExpirationTimer);
+    }
+
+    this.tokenExpirationTimer = null;
+  }
+
+  public autoLogin(): void {
+    const userData: {
+      id: string;
+      email: string;
+      _token: string;
+      _tokenExpirationDate: string
+    } = JSON.parse(localStorage.getItem('userData'));
+    if (!userData) {
+      return;
+    }
+    const expirationDate = new Date(userData._tokenExpirationDate);
+    const loadedUser = new UserModel(userData.id,
+      userData.email, userData._token, expirationDate);
+
+    if (loadedUser.token) {
+      this.userSubject.next(loadedUser);
+      const expirationDuration: number = expirationDate.getTime() - new Date().getTime();
+      this.autoLogout(expirationDuration);
+    }
+  }
+
+  public autoLogout(expirationDuration: number): void {
+    this.tokenExpirationTimer = setTimeout(() => {
+      this.logout();
+    }, expirationDuration);
+  }
+
+  private handlerUserAuthentication = (responseData: AuthResponseData) => {
+    const timestamp = AuthService.getTimestamp(+responseData.expiresIn);
+    const expirationDate = new Date(timestamp);
+    const user = new UserModel(responseData.localId,
+      responseData.email, responseData.idToken, expirationDate);
+    this.userSubject.next(user);
+    this.autoLogout(+responseData.expiresIn * 1000);
+    localStorage.setItem('userData', JSON.stringify(user));
   }
 }
