@@ -30,6 +30,8 @@ export class AuthService {
   private static handleError(errorResponse: HttpErrorResponse): Observable<never> {
     let errorMessage = 'An unknown error occurs';
 
+    console.error(errorResponse);
+
     if (!errorResponse.error || !errorResponse.error.error) {
       return throwError(errorMessage);
     }
@@ -46,6 +48,9 @@ export class AuthService {
         break;
       case 'USER_DISABLED':
         errorMessage = 'The user account has been disabled by an administrator.';
+        break;
+      case 'TOO_MANY_ATTEMPTS_TRY_LATER':
+        errorMessage = 'Access to this account has been temporarily disabled due to many failed login attempts';
         break;
     }
 
