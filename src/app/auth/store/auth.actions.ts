@@ -1,6 +1,7 @@
 import {Action} from '@ngrx/store';
 import {UserModel} from '../user.model';
 
+export const LOGIN_START = 'LOGIN_START';
 export const LOGIN = 'LOGIN';
 export const LOGOUT = 'LOGOUT';
 
