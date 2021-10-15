@@ -9,26 +9,6 @@ import * as fromApp from '../store/app.reducer';
 @Injectable()
 export class RecipeService {
   recipesChanged = new Subject<Recipe[]>();
-  // private recipes: Recipe[] = [
-  //   new Recipe(
-  //     'A Tes Recipe',
-  //     'This is a simply test',
-  //     'https://cdn.pixabay.com/photo/2016/06/15/19/09/food-1459693_960_720.jpg',
-  //     [
-  //       new Ingredient('Meat', 1),
-  //       new Ingredient('French Fries', 20)
-  //     ]
-  //   ),
-  //   new Recipe(
-  //     'A Tes Recipe Two',
-  //     'This is a simply test for two recipe',
-  //     'https://media.istockphoto.com/photos/steakhouse-menu-smoked-meat-assortment-vegetables-picture-id1171009981',
-  //     [
-  //       new Ingredient('Buns', 2),
-  //       new Ingredient('Meat', 2)
-  //     ]
-  //   )
-  // ];
 
   private recipes: Recipe[] = [];
 
@@ -40,15 +20,15 @@ export class RecipeService {
     this.recipesChanged.next(this.recipes.slice());
   }
 
-  getRecipes(): Recipe[] {
+  public getRecipes(): Recipe[] {
     return this.recipes.slice();
   }
 
-  getRecipeByIndex(index: number): Recipe {
+  public getRecipeByIndex(index: number): Recipe {
     return this.recipes.slice()[index];
   }
 
-  addIngredientsToShoppingList(ingredients: Ingredient[]): void {
+  public addIngredientsToShoppingList(ingredients: Ingredient[]): void {
     this.store.dispatch(new ShoppingListActions.AddIngredients(ingredients));
   }
 
