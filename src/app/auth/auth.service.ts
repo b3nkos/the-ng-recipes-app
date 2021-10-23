@@ -61,7 +61,7 @@ export class AuthService {
   }
 
   public signUp(email: string, password: string): Observable<AuthResponseData> {
-    return this.httpClient.post<AuthResponseData>(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${environment.firebaseAPIKey}`, {
+    return this.httpClient.post<AuthResponseData>(`${environment.firebaseBaseUrl}signUp?key=${environment.firebaseAPIKey}`, {
       email,
       password,
       returnSecureToken: true
@@ -72,7 +72,7 @@ export class AuthService {
   }
 
   public login(email: string, password: string): Observable<AuthResponseData> {
-    return this.httpClient.post<AuthResponseData>(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${environment.firebaseAPIKey}`, {
+    return this.httpClient.post<AuthResponseData>(`${environment.firebaseBaseUrl}signInWithPassword?key=${environment.firebaseAPIKey}`, {
       email,
       password,
       returnSecureToken: true
@@ -109,7 +109,7 @@ export class AuthService {
       userData.email, userData._token, expirationDate);
 
     if (loadedUser.token) {
-      this.store.dispatch(new AuthActions.Login(loadedUser));
+      this.store.dispatch(new AuthActions.AuthenticateSuccess(loadedUser));
       const expirationDuration: number = expirationDate.getTime() - new Date().getTime();
       this.autoLogout(expirationDuration);
     }
@@ -126,7 +126,7 @@ export class AuthService {
     const expirationDate = new Date(timestamp);
     const user = new UserModel(responseData.localId,
       responseData.email, responseData.idToken, expirationDate);
-    this.store.dispatch(new AuthActions.Login(user));
+    this.store.dispatch(new AuthActions.AuthenticateSuccess(user));
     this.autoLogout(+responseData.expiresIn * 1000);
     localStorage.setItem('userData', JSON.stringify(user));
   }

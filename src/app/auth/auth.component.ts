@@ -1,7 +1,7 @@
 import {Component, ComponentFactoryResolver, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {NgForm} from '@angular/forms';
-import {AuthResponseData, AuthService} from './auth.service';
-import {Observable, Subscription} from 'rxjs';
+import {AuthService} from './auth.service';
+import {Subscription} from 'rxjs';
 import {Router} from '@angular/router';
 import {AlertComponent} from '../shared/alert/alert.component';
 import {PlaceholderDirective} from '../shared/placeholder/placeholder.directive';
@@ -19,6 +19,7 @@ export class AuthComponent implements OnInit, OnDestroy {
   error: string = null;
   @ViewChild(PlaceholderDirective, {static: false}) alertHost: PlaceholderDirective;
   private closeSubscription: Subscription;
+  private storeSubscription: Subscription;
 
   constructor(private authService: AuthService, private router: Router,
               private componentFactoryResolver: ComponentFactoryResolver,
@@ -27,7 +28,7 @@ export class AuthComponent implements OnInit, OnDestroy {
 
 
   ngOnInit(): void {
-    this.store.select('auth').subscribe((authState) => {
+    this.storeSubscription = this.store.select('auth').subscribe((authState) => {
       this.isLoading = authState.loading;
       this.error = authState.authError;
       if (this.error) {
@@ -37,9 +38,8 @@ export class AuthComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.closeSubscription) {
-      this.closeSubscription.unsubscribe();
-    }
+    this.closeSubscription?.unsubscribe();
+    this.storeSubscription?.unsubscribe();
   }
 
   public onSwitchMode(): void {
@@ -56,34 +56,17 @@ export class AuthComponent implements OnInit, OnDestroy {
 
     this.isLoading = true;
 
-    let authObservable: Observable<AuthResponseData>;
-
     if (this.isLoginMode) {
       this.store.dispatch(new AuthActions.LoginStart({email, password}));
     } else {
-      authObservable = this.authService.signUp(email, password);
+      this.store.dispatch(new AuthActions.SignupStart({email, password}));
     }
-
-    // const handleSuccessLogin = (responseData) => {
-    //   console.log(responseData);
-    //   this.isLoading = false;
-    //   this.router.navigate(['/recipes']);
-    // };
-    //
-    // const handleErrorLogin = (errorMessage) => {
-    //   this.error = errorMessage;
-    //   this.showErrorAlert(errorMessage);
-    //   console.error(errorMessage);
-    //   this.isLoading = false;
-    // };
-    //
-    // authObservable.subscribe(handleSuccessLogin, handleErrorLogin);
 
     authForm.reset();
   }
 
   public onHandleError(): void {
-    this.error = null;
+    this.store.dispatch(new AuthActions.ClearError());
   }
 
   private showErrorAlert(message: string): void {
