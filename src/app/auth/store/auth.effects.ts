@@ -114,16 +114,24 @@ export class AuthEffects {
   autoLogin = this.actions$.pipe(
     ofType(AuthActions.AUTO_LOGIN),
     map(() => {
-      const loadedUser: UserModel = JSON.parse(localStorage.getItem('userData'));
+      const userData: {
+        id: string;
+        email: string;
+        userToken: string;
+        tokenExpirationDate: Date
+      } = JSON.parse(localStorage.getItem('userData'));
 
-      if (!loadedUser) {
-        return {type: 'DUMMY'};
+      if (!userData) {
+        return;
       }
 
-      console.log(loadedUser);
+      const loadedUser = new UserModel(userData.id,
+        userData.email, userData.userToken, userData.tokenExpirationDate);
+
+      console.log(loadedUser.token);
 
       if (loadedUser.token) {
-        return new AuthActions.AuthenticateSuccess(loadedUser);
+        // return new AuthActions.AuthenticateSuccess(loadedUser);
         // const expirationDuration: number = expirationDate.getTime() - new Date().getTime();
         // this.autoLogout(expirationDuration);
       }
