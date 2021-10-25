@@ -5,6 +5,7 @@ import {AuthService} from './auth.service';
 import {map, take} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
 import * as fromApp from '../store/app.reducer';
+import * as AuthActions from './store/auth.actions';
 
 @Injectable({
   providedIn: 'root'
@@ -16,6 +17,7 @@ export class AuthGuard implements CanActivate {
 
   public canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot):
     Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
+    this.store.dispatch(new AuthActions.AutoLogin());
     return this.store.select('auth')
       .pipe(
         take(1),

@@ -23,6 +23,7 @@ const handleAuthentication = (responseData: AuthResponseData): AuthActions.Authe
   const expirationDate = new Date(timestamp);
   const user = new UserModel(responseData.localId,
     responseData.email, responseData.idToken, expirationDate);
+  localStorage.setItem('userData', JSON.stringify(user));
   return new AuthActions.AuthenticateSuccess(user);
 };
 
@@ -102,10 +103,40 @@ export class AuthEffects {
   );
 
   @Effect({dispatch: false})
-  authSuccess = this.actions$.pipe(
-    ofType(AuthActions.AUTHENTICATE_SUCCESS),
+  authRedirect = this.actions$.pipe(
+    ofType(AuthActions.AUTHENTICATE_SUCCESS, AuthActions.LOGOUT),
     tap(() => {
       this.router.navigate(['/']);
+    })
+  );
+
+  @Effect()
+  autoLogin = this.actions$.pipe(
+    ofType(AuthActions.AUTO_LOGIN),
+    map(() => {
+      const loadedUser: UserModel = JSON.parse(localStorage.getItem('userData'));
+
+      if (!loadedUser) {
+        return {type: 'DUMMY'};
+      }
+
+      console.log(loadedUser);
+
+      if (loadedUser.token) {
+        return new AuthActions.AuthenticateSuccess(loadedUser);
+        // const expirationDuration: number = expirationDate.getTime() - new Date().getTime();
+        // this.autoLogout(expirationDuration);
+      }
+
+      return {type: 'DUMMY'};
+    })
+  );
+
+  @Effect({dispatch: false})
+  authLogout = this.actions$.pipe(
+    ofType(AuthActions.LOGOUT),
+    tap(() => {
+      localStorage.removeItem('userData');
     })
   );
 }
