@@ -19,12 +19,14 @@ export interface AuthResponseData {
   registered?: boolean;
 }
 
+const USER_DATA_LOCAL_STORAGE_KEY = 'userData';
+
 const handleAuthentication = (responseData: AuthResponseData): AuthActions.AuthenticateSuccess => {
   const timestamp: number = new Date().getTime() + +responseData.expiresIn * 1000;
   const expirationDate = new Date(timestamp);
   const user = new UserModel(responseData.localId,
     responseData.email, responseData.idToken, expirationDate);
-  localStorage.setItem('userData', JSON.stringify(user));
+  localStorage.setItem(USER_DATA_LOCAL_STORAGE_KEY, JSON.stringify(user));
   return new AuthActions.AuthenticateSuccess(user);
 };
 
@@ -74,7 +76,7 @@ export class AuthEffects {
           returnSecureToken: true
         }).pipe(
           tap((responseData: AuthResponseData) => {
-            this.authService.autoLogout(+responseData.expiresIn * 1000);
+            this.authService.setLogoutTimer(+responseData.expiresIn * 1000);
           }),
           map((responseData: AuthResponseData) => {
             return handleAuthentication(responseData);
@@ -97,7 +99,7 @@ export class AuthEffects {
           returnSecureToken: true
         }).pipe(
           tap((responseData: AuthResponseData) => {
-            this.authService.autoLogout(+responseData.expiresIn * 1000);
+            this.authService.setLogoutTimer(+responseData.expiresIn * 1000);
           }),
           map((responseData: AuthResponseData) => {
             return handleAuthentication(responseData);
@@ -111,7 +113,7 @@ export class AuthEffects {
 
   @Effect({dispatch: false})
   authRedirect = this.actions$.pipe(
-    ofType(AuthActions.AUTHENTICATE_SUCCESS, AuthActions.LOGOUT),
+    ofType(AuthActions.AUTHENTICATE_SUCCESS),
     tap(() => {
       this.router.navigate(['/']);
     })
@@ -126,7 +128,7 @@ export class AuthEffects {
         email: string;
         userToken: string;
         tokenExpirationDate: Date
-      } = JSON.parse(localStorage.getItem('userData'));
+      } = JSON.parse(localStorage.getItem(USER_DATA_LOCAL_STORAGE_KEY));
 
       if (!userData) {
         return {type: 'DUMMY'};
@@ -137,7 +139,7 @@ export class AuthEffects {
 
       if (loadedUser.token) {
         const expirationDuration: number = loadedUser.tokenExpirationDate.getTime() - new Date().getTime();
-        this.authService.autoLogout(expirationDuration);
+        this.authService.setLogoutTimer(expirationDuration);
         return new AuthActions.AuthenticateSuccess(loadedUser);
       }
 
@@ -150,7 +152,8 @@ export class AuthEffects {
     ofType(AuthActions.LOGOUT),
     tap(() => {
       this.authService.clearLogoutTimer();
-      localStorage.removeItem('userData');
+      localStorage.removeItem(USER_DATA_LOCAL_STORAGE_KEY);
+      this.router.navigate(['/auth']);
     })
   );
 }
