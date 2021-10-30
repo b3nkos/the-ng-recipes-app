@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import {
   AbstractControl,
@@ -12,16 +12,20 @@ import { Ingredient } from '../../shared/ingredient.model';
 import { Store } from '@ngrx/store';
 import * as fromApp from '../../store/app.reducer';
 import { map } from 'rxjs/operators';
+import * as RecipesActions from '../../recipes/store/recipe.actions';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-recipe-edit',
   templateUrl: './recipe-edit.component.html',
   styleUrls: ['./recipe-edit.component.css'],
 })
-export class RecipeEditComponent implements OnInit {
+export class RecipeEditComponent implements OnInit, OnDestroy {
   private id: number;
   private editMode = false;
   public recipeForm: FormGroup;
+
+  private storeSubscription: Subscription;
 
   get controls(): AbstractControl[] {
     return (this.recipeForm.get('ingredients') as FormArray).controls;
@@ -51,7 +55,7 @@ export class RecipeEditComponent implements OnInit {
     const recipeIngredients = new FormArray([]);
 
     if (this.editMode) {
-      this.store
+      this.storeSubscription = this.store
         .select('recipes')
         .pipe(
           map((recipeState) =>
@@ -88,9 +92,14 @@ export class RecipeEditComponent implements OnInit {
 
   public onSubmit(): void {
     if (this.editMode) {
-      this.recipeService.updateRecipe(this.id, this.recipeForm.value);
+      this.store.dispatch(
+        new RecipesActions.UpdateRecipe({
+          index: this.id,
+          newRecipe: this.recipeForm.value,
+        })
+      );
     } else {
-      this.recipeService.addRecipe(this.recipeForm.value);
+      this.store.dispatch(new RecipesActions.AddRecipe(this.recipeForm.value));
     }
 
     this.onCancel();
@@ -115,5 +124,9 @@ export class RecipeEditComponent implements OnInit {
 
   public onDeleteIngredient(index: number): void {
     (this.recipeForm.get('ingredients') as FormArray).removeAt(index);
+  }
+
+  ngOnDestroy(): void {
+    this.storeSubscription?.unsubscribe();
   }
 }
