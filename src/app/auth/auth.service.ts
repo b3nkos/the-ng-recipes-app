@@ -9,7 +9,7 @@ import * as AuthActions from './store/auth.actions';
   providedIn: 'root'
 })
 export class AuthService {
-  private tokenExpirationTimer: number;
+  private tokenExpirationTimer: ReturnType<typeof setTimeout>;
 
   constructor(private httpClient: HttpClient, private router: Router, private store: Store<fromApp.AppState>) {
   }
