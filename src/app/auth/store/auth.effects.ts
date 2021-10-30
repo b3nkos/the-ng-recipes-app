@@ -27,7 +27,7 @@ const handleAuthentication = (responseData: AuthResponseData): AuthActions.Authe
   const user = new UserModel(responseData.localId,
     responseData.email, responseData.idToken, expirationDate);
   localStorage.setItem(USER_DATA_LOCAL_STORAGE_KEY, JSON.stringify(user));
-  return new AuthActions.AuthenticateSuccess(user);
+  return new AuthActions.AuthenticateSuccess({user, redirect: true});
 };
 
 const handleError = (errorResponse): Observable<AuthActions.AuthenticateFail> => {
@@ -70,7 +70,7 @@ export class AuthEffects {
     switchMap((authData: AuthActions.LoginStart) => {
 
       return this.httpClient
-        .post<AuthResponseData>(`${environment.firebaseBaseUrl}signInWithPassword?key=${environment.firebaseAPIKey}`, {
+        .post<AuthResponseData>(`${environment.firebaseIdentityBaseUrl}signInWithPassword?key=${environment.firebaseAPIKey}`, {
           email: authData.payload.email,
           password: authData.payload.password,
           returnSecureToken: true
@@ -93,7 +93,7 @@ export class AuthEffects {
     ofType(AuthActions.SIGNUP_START),
     switchMap((signupAction: AuthActions.SignupStart) => {
       return this.httpClient
-        .post<AuthResponseData>(`${environment.firebaseBaseUrl}signUp?key=${environment.firebaseAPIKey}`, {
+        .post<AuthResponseData>(`${environment.firebaseIdentityBaseUrl}signUp?key=${environment.firebaseAPIKey}`, {
           email: signupAction.payload.email,
           password: signupAction.payload.password,
           returnSecureToken: true
@@ -114,8 +114,10 @@ export class AuthEffects {
   @Effect({dispatch: false})
   authRedirect = this.actions$.pipe(
     ofType(AuthActions.AUTHENTICATE_SUCCESS),
-    tap(() => {
-      this.router.navigate(['/']);
+    tap((authSuccessAction: AuthActions.AuthenticateSuccess) => {
+      if (authSuccessAction.payload.redirect) {
+        this.router.navigate(['/']);
+      }
     })
   );
 
@@ -140,7 +142,7 @@ export class AuthEffects {
       if (loadedUser.token) {
         const expirationDuration: number = loadedUser.tokenExpirationDate.getTime() - new Date().getTime();
         this.authService.setLogoutTimer(expirationDuration);
-        return new AuthActions.AuthenticateSuccess(loadedUser);
+        return new AuthActions.AuthenticateSuccess({user: loadedUser, redirect: false});
       }
 
       return {type: 'DUMMY'};

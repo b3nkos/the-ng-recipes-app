@@ -12,7 +12,7 @@ export const AUTO_LOGIN = 'AUTO_LOGIN';
 export class AuthenticateSuccess implements Action {
   readonly type = AUTHENTICATE_SUCCESS;
 
-  constructor(public payload: UserModel) {
+  constructor(public payload: {user: UserModel, redirect: boolean}) {
   }
 }
 
